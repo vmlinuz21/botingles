@@ -1,0 +1,13 @@
+1. What type of music are you interested in?
+
+2. Who's your favourite musician?
+
+3. Do you play an instrument?
+
+4. What instrument do you play?
+
+5. What instrument do you want to play?
+
+6. Do you often go to concerts?
+
+7. What was the last concert that you went to?
