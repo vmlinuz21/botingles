@@ -248,96 +248,11 @@ def build_page(keys: List[str], page: int, title: str) -> str:
 
     return out.rstrip()
 
-# ================== Aiogram ==================
-dp = Dispatcher()
+# ================== Auditoría de pares ==================
+def audit_files():
+    audio_exts = set(AUDIO_EXTS)
+    text_exts  = set(TEXT_EXTS)
+    audios, texts = set(), set()
 
-@dp.message(Command("start"))
-async def start_cmd(msg: Message):
-    await msg.answer(
-        "Hola 👋\n"
-        "• /list [página] → ver materiales (paginado)\n"
-        "• /search <texto> [página] → filtrar por nombre\n"
-        "• /rescan → reindexar data/\n"
-        "• /play <clave|nombre> → audio + texto con traducción debajo"
-    )
-
-@dp.message(Command("list"))
-async def list_cmd(msg: Message):
-    preload_local_media()
-    if not MEDIA_DB:
-        await msg.answer("No he encontrado materiales en data/.")
-        return
-    _, page = parse_cmd_with_page(msg.text or "/list")
-    keys = list(MEDIA_DB.keys())  # no ordenar aquí
-    text = build_page(keys, page, "Materiales encontrados")
-    await msg.answer(text)
-
-@dp.message(Command("search"))
-async def search_cmd(msg: Message):
-    preload_local_media()
-    query, page = parse_cmd_with_page(msg.text or "/search")
-    q = query.strip().lower()
-    if not q:
-        await msg.answer("Uso: /search <texto> [página]")
-        return
-    keys = [k for k in MEDIA_DB.keys() if q in k.lower()]
-    if not keys:
-        await msg.answer("Sin resultados.")
-        return
-    text = build_page(keys, page, f"Resultados para “{query}”")
-    await msg.answer(text)
-
-@dp.message(Command("rescan"))
-async def rescan_cmd(msg: Message):
-    preload_local_media()
-    await msg.answer(f"Reindexado. Total materiales: {len(MEDIA_DB)}")
-
-@dp.message(Command("play"))
-async def play_cmd(msg: Message):
-    parts = msg.text.split(maxsplit=1)
-    if len(parts) < 2:
-        await msg.answer("Uso: /play <clave o nombre>")
-        return
-    raw = parts[1]
-    key = _resolve_key(raw)
-    if not key or key not in MEDIA_DB:
-        await msg.answer("No encuentro ese material. Prueba /list o /search.")
-        return
-
-    item = MEDIA_DB[key]
-    audio_path: Optional[str] = item.get("audio")  # type: ignore
-    cues: List[Cue] = item.get("cues")  # type: ignore
-    if not audio_path or not cues:
-        await msg.answer("Faltan archivos para ese material.")
-        return
-
-    # 1) Enviar audio
-    try:
-        await msg.answer_audio(audio=FSInputFile(audio_path), caption=f"▶ {key}")
-    except Exception as e:
-        await msg.answer(f"No pude enviar el audio: {e}")
-        return
-
-    # 2) Enviar texto original + traducción debajo (sin fonética)
-    out_lines: List[str] = []
-    for c in cues:
-        orig = c.text
-        trans = translate_line(orig)
-        out_lines.append(f"{orig}\n{trans}\n")
-
-    full_text = "\n".join(out_lines).strip()
-
-    maxlen = 3500
-    for i in range(0, len(full_text), maxlen):
-        await msg.answer(full_text[i:i+maxlen])
-
-# ================== Main ==================
-async def main():
-    if not BOT_TOKEN:
-        raise RuntimeError("Falta TELEGRAM_TOKEN en el entorno.")
-    preload_local_media()
-    bot = Bot(BOT_TOKEN, parse_mode=None)
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    if not os.path.isdir(DATA_DIR):
+        return {"audios
