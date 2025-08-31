@@ -23,8 +23,9 @@ MIN_LAST_DUR = 1.2
 AUDIO_EXTS = (".mp3", ".wav", ".m4a", ".ogg", ".oga", ".aac", ".flac")
 TEXT_EXTS = (".txt", ".srt", ".vtt")
 
-PAGE_SIZE = 100   # elementos por página
-MSG_BUDGET = 3900 # margen para no pasar el límite de 4096 de Telegram
+PAGE_SIZE   = 100   # elementos por página
+CHUNK_LIMIT = 3500  # tamaño máx. por mensaje de texto
+MSG_BUDGET  = 3900  # seguridad para no tocar el límite de 4096
 
 # ================== Traducción ==================
 from deep_translator import GoogleTranslator
@@ -194,15 +195,13 @@ def range_label_from_n(n: int) -> str:
     end = start + 9
     return f"{start}–{end}"
 
-def build_page(keys: List[str], page: int, title: str) -> str:
+def build_page_chunks(keys: List[str], page: int, title: str) -> List[str]:
     """
-    Página con:
-    - orden natural
-    - cabeceras 1–10, 11–20, …
-    - límite de mensaje (MSG_BUDGET)
+    Igual que build_page, pero devuelve **varios trozos** (chunks)
+    para enviarlos en mensajes separados si hace falta.
     """
     if not keys:
-        return f"{title} (vacío)"
+        return [f"{title} (vacío)"]
 
     keys_sorted = sorted(keys, key=natsort_key)
 
@@ -214,41 +213,41 @@ def build_page(keys: List[str], page: int, title: str) -> str:
     slice_keys = keys_sorted[start:end]
 
     header = f"{title} (pág. {page}/{total_pages}, total {total}):\n"
-    out = header
-    used = len(out)
+    chunks: List[str] = []
+    buf = header
+    used = len(buf)
 
     last_bucket: Optional[object] = None
+
+    def add(piece: str):
+        nonlocal buf, used
+        if used + len(piece) > CHUNK_LIMIT:
+            chunks.append(buf.rstrip())
+            buf = f"{title} (pág. {page}/{total_pages}, total {total}) — continuación:\n"
+            used = len(buf)
+        buf += piece
+        used += len(piece)
+
     for k in slice_keys:
         n = extract_last_number(k)
         if n is not None:
             bucket = (n - 1) // 10
             if bucket != last_bucket:
                 block_label = range_label_from_n(n)
-                block_header = f"\n[{block_label}]\n"
-                if used + len(block_header) > MSG_BUDGET:
-                    break
-                out += block_header
-                used += len(block_header)
+                add(f"\n[{block_label}]\n")
                 last_bucket = bucket
         else:
             if last_bucket != "otros":
-                block_header = "\n[Otros]\n"
-                if used + len(block_header) > MSG_BUDGET:
-                    break
-                out += block_header
-                used += len(block_header)
+                add("\n[Otros]\n")
                 last_bucket = "otros"
 
         line = f"• {k} ({len(MEDIA_DB[k].get('cues') or [])} líneas)\n"
-        if used + len(line) > MSG_BUDGET:
-            break
-        out += line
-        used += len(line)
+        add(line)
 
-    if used == len(header):
-        out += "(sin elementos en esta página)"
+    if buf.strip():
+        chunks.append(buf.rstrip())
 
-    return out.rstrip()
+    return chunks
 
 # ================== Auditoría de pares ==================
 def audit_files() -> dict:
@@ -302,7 +301,7 @@ dp = Dispatcher()
 async def start_cmd(msg: Message):
     await msg.answer(
         "Hola 👋\n"
-        "• /list [página] → ver materiales (paginado)\n"
+        "• /list [página] → ver materiales (paginado, multi-mensaje)\n"
         "• /search <texto> [página] → filtrar por nombre\n"
         "• /rescan → reindexar data/\n"
         "• /missing → audita pares audio/texto\n"
@@ -316,9 +315,9 @@ async def list_cmd(msg: Message):
         await msg.answer("No he encontrado materiales en data/.")
         return
     _, page = parse_cmd_with_page(msg.text or "/list")
-    keys = list(MEDIA_DB.keys())  # no ordenar aquí; lo hace build_page
-    text = build_page(keys, page, "Materiales encontrados")
-    await msg.answer(text)
+    keys = list(MEDIA_DB.keys())
+    for chunk in build_page_chunks(keys, page, "Materiales encontrados"):
+        await msg.answer(chunk)
 
 @dp.message(Command("search"))
 async def search_cmd(msg: Message):
@@ -328,12 +327,12 @@ async def search_cmd(msg: Message):
     if not q:
         await msg.answer("Uso: /search <texto> [página]")
         return
-    keys = [k for k in MEDIA_DB.keys() if q in k.lower()]  # sin ordenar aquí
+    keys = [k for k in MEDIA_DB.keys() if q in k.lower()]
     if not keys:
         await msg.answer("Sin resultados.")
         return
-    text = build_page(keys, page, f"Resultados para “{query}”")
-    await msg.answer(text)
+    for chunk in build_page_chunks(keys, page, f"Resultados para “{query}”"):
+        await msg.answer(chunk)
 
 @dp.message(Command("rescan"))
 async def rescan_cmd(msg: Message):
@@ -352,12 +351,11 @@ async def missing_cmd(msg: Message):
         f"• Pares válidos (indexados): {stats['pairs']}",
         f"• Audios SIN texto: {len(stats['missing_text'])}",
     ]
-    if mt:
-        lines += ["  ejemplos:"] + [f"  - {x}" for x in mt]
+    if mt: lines += ["  ejemplos:"] + [f"  - {x}" for x in mt]
     lines += [f"• Textos SIN audio: {len(stats['missing_audio'])}"]
-    if ma:
-        lines += ["  ejemplos:"] + [f"  - {x}" for x in ma]
-    await msg.answer("\n".join(lines))
+    if ma: lines += ["  ejemplos:"] + [f"  - {x}" for x in ma]
+    for i in range(0, len("\n".join(lines)), CHUNK_LIMIT):
+        await msg.answer("\n".join(lines)[i:i+CHUNK_LIMIT])
 
 @dp.message(Command("play"))
 async def play_cmd(msg: Message):
@@ -393,11 +391,8 @@ async def play_cmd(msg: Message):
         out_lines.append(f"{orig}\n{trans}\n")
 
     full_text = "\n".join(out_lines).strip()
-
-    # Fragmentar para no superar límites de Telegram
-    maxlen = 3500
-    for i in range(0, len(full_text), maxlen):
-        await msg.answer(full_text[i:i + maxlen])
+    for i in range(0, len(full_text), CHUNK_LIMIT):
+        await msg.answer(full_text[i:i + CHUNK_LIMIT])
 
 # ================== Main ==================
 async def main():
