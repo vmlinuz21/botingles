@@ -1,0 +1,15 @@
+﻿1 
+A: My bus was late. I'm sorry.
+B: That's OK.
+
+2 
+A: I'm so sorry! I've forgotten my keys!
+B: No problem.
+
+3 
+A: I don't like fish. I'm terribly sorry.
+B: Don't worry.
+
+4 
+A: I lost your phone. I'm so terribly sorry.
+B: Don't worry about it.
