@@ -1,0 +1,24 @@
+﻿Reporter: Excuse me, sir. Can I ask you some questions about how often you do jobs in the house?
+Man: Sure.
+Reporter: Thank you. OK, the first question: At home, do you do the washing-up?
+Man: Yes. Not all the time, but I do it sometimes.
+Reporter: Sometimes?
+Man: Yes.
+Reporter: That's great. Do you have a dishwasher?
+Man: Yes, I do.
+Reporter: Do you use it every day?
+Man: No, but I often use it.
+Reporter: OK, thanks. Do you use a microwave oven?
+Man: Yes, but not often. I usually use the oven on our cooker.
+Reporter: I see. Do you do the ironing?
+Man: The what? Oh, the ironing. No, not at all. I never do the ironing.
+Reporter: Oh, right. Do you use a toaster?
+Man: Oh, yes. I like toast for breakfast every day.
+Reporter: Every day. OK. Great. And finally, do you have a washing machine?
+Man: Yes, of course.
+Reporter: And do you do the washing?
+Man: No. My wife usually does it but I don't.
+Reporter: Do you do it sometimes?
+Man: No. Never.
+Reporter: That's lovely. Thank you very much indeed.
+Man: You're welcome.
