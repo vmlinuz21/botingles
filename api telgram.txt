@@ -1,0 +1,3 @@
+TELEGRAM_TOKEN = "8451707643:AAESPrIgir2h7JwvUBMtxK4d7jlzoEkQq_w"
+$env:TELEGRAM_TOKEN="8451707643:AAESPrIgir2h7JwvUBMtxK4d7jlzoEkQq_w"   # PowerShell
+python main.py
