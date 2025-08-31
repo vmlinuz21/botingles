@@ -1,0 +1,17 @@
+﻿angry 
+annoyed 
+bored 
+comfortable
+confident 
+confused 
+depressed 
+excited
+foolish 
+happy 
+interested 
+moody 
+nervous
+relaxed 
+surprised 
+tired 
+worried
