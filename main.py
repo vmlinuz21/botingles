@@ -12,7 +12,7 @@ from aiogram.types import Message, FSInputFile
 from aiogram.filters import Command
 
 # ================== Config ==================
-BOT_TOKEN = "8451707643:AAESPrIgir2h7JwvUBMtxK4d7jlzoEkQq_w" 
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN", "").strip()
 DATA_DIR = os.path.abspath(os.getenv("DATA_DIR", "data"))
 os.makedirs(DATA_DIR, exist_ok=True)
 
