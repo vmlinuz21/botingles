@@ -1,0 +1,11 @@
+A: You're a doctor. What sort of illnesses do you see?
+B: That depends. A lot of people come to see me with common problems like a sore throat.
+A: Is that serious?
+B: Sometimes. When you have a sore throat and a temperature.
+A: I see.
+B: Yes, then I usually have to write a prescription.
+A: What for? Painkillers?
+B: No, antibiotics.
+A: When should people go directly to hospital?
+B: When your problem is serious, for example, a pain in your chest or a broken arm, for example.
+A: What about problems like insomnia?
