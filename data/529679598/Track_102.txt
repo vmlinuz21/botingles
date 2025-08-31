@@ -1,0 +1,11 @@
+1
+a: My home Internet doesn't work. 
+b: What a shame! What are you going to do?
+
+2
+a: One of my colleagues is awful. She hates me! 
+b: What a pity! Speak to your boss.
+
+3
+a: How do you feel about working longer hours? 
+b: I'm unhappy. I need more money.
