@@ -22,14 +22,14 @@ MIN_LAST_DUR = 1.2
 AUDIO_EXTS = (".mp3", ".wav", ".m4a", ".ogg", ".oga", ".aac", ".flac")
 TEXT_EXTS  = (".txt", ".srt", ".vtt")
 
-PAGE_SIZE = 100          # elementos por página (paginación de /list y /search)
+PAGE_SIZE = 100          # elementos por página
 MSG_BUDGET = 3900        # margen para no pasar el límite de 4096 de Telegram
 
 # ================== Traducción ==================
 from deep_translator import GoogleTranslator
 
 def translate_line(text: str) -> str:
-    """Traduce una línea (origen autodetectado -> español). Si falla, devuelve el original."""
+    """Traduce una línea (auto -> es). Si falla, devuelve el original."""
     if not text.strip():
         return ""
     try:
@@ -95,7 +95,6 @@ def parse_txt(content: str) -> List[Cue]:
     t0 = 0.0
     for r in rows:
         txt = normalize_text(r)
-        # estimación simple de duración por WPS (para conservar orden)
         dur = max(MIN_LAST_DUR, len(re.findall(r"\w+", txt)) / DEFAULT_WPS)
         cues.append(Cue(t0, t0 + dur, txt))
         t0 += dur
@@ -168,7 +167,6 @@ def parse_cmd_with_page(text: str) -> Tuple[str, int]:
         return "", 1
     if len(parts) == 2:
         return ("", int(parts[1])) if parts[1].isdigit() else (parts[1], 1)
-    # len == 3
     q, maybe_page = parts[1], parts[2]
     if maybe_page.isdigit():
         return q, int(maybe_page)
@@ -176,10 +174,7 @@ def parse_cmd_with_page(text: str) -> Tuple[str, int]:
 
 # ---- Ordenación natural y bloques 1–10, 11–20, … ----
 def natsort_key(path: str):
-    """
-    Clave de ordenación natural (numérica) por todo el path.
-    Evita que '10' vaya antes que '110'.
-    """
+    """Clave de ordenación natural para evitar que '10' vaya antes que '110'."""
     tokens: List[object] = []
     for seg in path.split('/'):
         for part in re.split(r'(\d+)', seg.lower()):
@@ -187,33 +182,28 @@ def natsort_key(path: str):
     return tokens
 
 def extract_last_number(key: str) -> Optional[int]:
-    """
-    Toma el ÚLTIMO número del basename (por ejemplo, Track_110 -> 110).
-    Devuelve None si no hay número.
-    """
+    """Último número del basename (Track_110 -> 110)."""
     nums = re.findall(r'\d+', os.path.basename(key))
     return int(nums[-1]) if nums else None
 
 def range_label_from_n(n: int) -> str:
-    """Devuelve la etiqueta de bloque por decenas: 1–10, 11–20, etc., según n."""
+    """Bloque 1–10, 11–20, etc., para n."""
     start = ((n - 1) // 10) * 10 + 1
     end = start + 9
     return f"{start}–{end}"
 
 def build_page(keys: List[str], page: int, title: str) -> str:
     """
-    Construye el texto de una página:
-    - Orden natural (10 no va antes que 110)
-    - Cabeceras por bloques 1–10, 11–20, etc. según el último número del basename
-    - Respeta el límite (~4096) usando MSG_BUDGET
+    Página con:
+    - orden natural
+    - cabeceras 1–10, 11–20, …
+    - límite de mensaje (MSG_BUDGET)
     """
     if not keys:
         return f"{title} (vacío)"
 
-    # 1) Ordenación natural
     keys_sorted = sorted(keys, key=natsort_key)
 
-    # 2) Paginación
     total = len(keys_sorted)
     total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
     page = max(1, min(page, total_pages))
@@ -225,13 +215,12 @@ def build_page(keys: List[str], page: int, title: str) -> str:
     out = header
     used = len(out)
 
-    last_bucket: Optional[object] = None  # bucket numérico o la cadena "otros"
+    last_bucket: Optional[object] = None
     for k in slice_keys:
         n = extract_last_number(k)
         if n is not None:
-            bucket = (n - 1) // 10  # 0->1–10, 1->11–20, ...
+            bucket = (n - 1) // 10
             if bucket != last_bucket:
-                # Nueva cabecera de bloque
                 block_label = range_label_from_n(n)
                 block_header = f"\n[{block_label}]\n"
                 if used + len(block_header) > MSG_BUDGET:
@@ -272,18 +261,18 @@ async def start_cmd(msg: Message):
         "• /play <clave|nombre> → audio + texto con traducción debajo"
     )
 
-@dp.message(Command("list")))
+@dp.message(Command("list"))
 async def list_cmd(msg: Message):
     preload_local_media()
     if not MEDIA_DB:
         await msg.answer("No he encontrado materiales en data/.")
         return
     _, page = parse_cmd_with_page(msg.text or "/list")
-    keys = list(MEDIA_DB.keys())  # NO ordenar aquí; lo hace build_page (natural)
+    keys = list(MEDIA_DB.keys())  # no ordenar aquí
     text = build_page(keys, page, "Materiales encontrados")
     await msg.answer(text)
 
-@dp.message(Command("search")))
+@dp.message(Command("search"))
 async def search_cmd(msg: Message):
     preload_local_media()
     query, page = parse_cmd_with_page(msg.text or "/search")
@@ -291,19 +280,19 @@ async def search_cmd(msg: Message):
     if not q:
         await msg.answer("Uso: /search <texto> [página]")
         return
-    keys = [k for k in MEDIA_DB.keys() if q in k.lower()]  # sin ordenar aquí
+    keys = [k for k in MEDIA_DB.keys() if q in k.lower()]
     if not keys:
         await msg.answer("Sin resultados.")
         return
     text = build_page(keys, page, f"Resultados para “{query}”")
     await msg.answer(text)
 
-@dp.message(Command("rescan")))
+@dp.message(Command("rescan"))
 async def rescan_cmd(msg: Message):
     preload_local_media()
     await msg.answer(f"Reindexado. Total materiales: {len(MEDIA_DB)}")
 
-@dp.message(Command("play")))
+@dp.message(Command("play"))
 async def play_cmd(msg: Message):
     parts = msg.text.split(maxsplit=1)
     if len(parts) < 2:
@@ -338,7 +327,6 @@ async def play_cmd(msg: Message):
 
     full_text = "\n".join(out_lines).strip()
 
-    # fragmentar para no superar límites de Telegram
     maxlen = 3500
     for i in range(0, len(full_text), maxlen):
         await msg.answer(full_text[i:i+maxlen])
