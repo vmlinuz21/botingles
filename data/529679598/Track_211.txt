@@ -1,0 +1,7 @@
+﻿1 'My bus was late. I'm sorry.' 'That's OK.'
+
+2 'I'm so sorry. I've forgotten my keys.' 'No problem.'
+
+3 'I don't like fish. I'm terribly sorry.' 'Don't worry.'
+
+4 'I lost your phone. I'm so terribly sorry.' 'Don't worry about it.'
