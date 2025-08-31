@@ -1,0 +1,46 @@
+﻿1
+A: Can you help me make the beds?
+B: Yes, sure. How many more do you have to do?
+A: Five more beds and two bathrooms? And you?
+B: Just one bed and one bathroom. What time do you finish today?
+A: Two thirty. Do you want to go for a coffee?
+B: Great idea! See you later.
+
+2
+A: Excuse me. Can you help me? I'm trying to cross the street.
+B: Yes, of course.
+A: Thank you very much indeed. Do you live here?
+B: Yes, I live round the corner. Wow, there's a lot of traffic today. OK. There you are.
+A: That's wonderful!
+
+3
+A: Can you do something for me?
+B: Sure. What is it?
+A: Can you do the washing-up tonight?
+B: Why?
+A: Because there's something I have to do.
+B: Is there a football match on television?
+A: Um, possibly. How much do you want? Five pounds?
+B: Is there a lot of washing-up?
+A: No.
+B: OK then.
+A: Thanks, darling. Oh, don't say anything to your mother.
+
+4
+A: Can I help you? Is everything OK?
+B: Yes. Can you tell me the price of this dress?
+A: That dress is seventy-nine pounds.
+B: Ah.
+A: Do you want to try it on?
+B: No, I'm just looking, thank you.
+A: Call me if you need any help.
+B: Thanks.
+
+5
+A: Excuse me!
+B & C: Yes, sir?
+A: Can you do something for me?
+B & C: Yes, sir.
+A: Can you stop talking?
+B & C: Yes, sir.
+A: Thank you. Now, let's turn to page twenty-four.
