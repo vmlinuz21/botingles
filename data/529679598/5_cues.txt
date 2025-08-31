@@ -1,0 +1,14 @@
+0.570	4.814	Sam: Hello, Nectar Design, Sam Wells speaking.
+4.814	9.057	Maisy: Hi, Sam, it's Maisy Walton.
+9.057	15.120	Sam: Hi, Maisy, how are you? What are you doing?
+16.020	17.070	Maisy: I'm on a train. I'm travelling to London for a meeting with Lewis.
+17.580	20.370	Sam: Oh, OK. Are you feeling OK today? You looked tired last week.
+20.760	21.690	Maisy: Yes. I'm fine thanks. I'm sitting in first class and I'm looking at some documents on my laptop.
+22.020	22.710	Sam: Great. Are you ready to meet Lewis?
+23.580	25.380	Maisy: Yes. I'm preparing my presentation now. Are you working?
+25.830	27.630	Sam: Yes, I'm reading my emails. There are about 300 in my inbox.
+27.930	30.000	Maisy: Can you email me a document? Have you got time?
+30.480	32.190	Sam: Of course. What do you want me to do?
+32.670	35.160	Maisy: I can't find the design file for Lewis's project. I'm searching for it at the moment.
+35.490	36.600	Sam: No problem. Yes, here it is. I'm sending it to you now.
+37.170	38.760	Maisy: Thanks, Sam, you're a star!
