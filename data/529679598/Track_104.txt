@@ -1,0 +1,20 @@
+﻿Interview 1
+Interviewer: Thank you for coming in, Mr Kenway. Now, have you worked in a big office like this before?
+Eddie: Yes, I've already had some office experience. I've worked in computing for about six years. I worked for UKHousebuyer.com for six years and I've worked for a few different companies since then.
+Interviewer: Have you ever worked for a telesales company?
+Eddie: Not yet! I've been interested in computers for a long time. I know you want a Computing graduate and I did a Mathematics degree, but I've done a number of computer courses since I left university.
+Interviewer: So, what other skills can you offer us as a computing manager?
+Eddie: I'm good with people; I'm flexible about my working hours. I don't mind working weekends and evenings.
+Interviewer: Well, that's good. Do you have any questions?
+Eddie: Err, well yes ... what is the salary?
+Interviewer: Oh, haven't we told you that yet? Sorry, it's £24,000 per year.
+Eddie: What a shame. This is a great job but another company have already offered me £28,000 a year.
+
+Interview 2
+Interviewer: Mrs Ledesma, please tell us about your qualifications and experience.
+Maura: Well, as you can see from my CV, I've worked with computers since I left school ten years ago, and for the last two years I've worked as a computing manager. I did my Computing degree when I worked for a design company and I've already worked with the software you use here at Telemarket.
+Interviewer: May I ask you what your current salary is? And also, what other skills and experience do you have?
+Maura: My salary is £22,000. I think I'm energetic and dynamic and I like working with people.
+Interviewer: Can you work evenings and weekends?
+Maura: I can work some weekends but evenings are difficult for me. I've got two young children.
+Interviewer: That's a pity. We really need someone to work evenings and weekends.
