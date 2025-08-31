@@ -5,7 +5,7 @@ import os
 import re
 import asyncio
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message, FSInputFile
@@ -22,8 +22,10 @@ MIN_LAST_DUR = 1.2
 AUDIO_EXTS = (".mp3", ".wav", ".m4a", ".ogg", ".oga", ".aac", ".flac")
 TEXT_EXTS  = (".txt", ".srt", ".vtt")
 
+PAGE_SIZE = 100          # elementos por página
+MSG_BUDGET = 3900        # margen para no pasar el límite de 4096 de Telegram
+
 # ================== Traducción ==================
-# GoogleTranslator (deep-translator) -> estable y sin httpx
 from deep_translator import GoogleTranslator
 
 def translate_line(text: str) -> str:
@@ -136,7 +138,7 @@ def preload_local_media():
             except Exception as e:
                 print(f"[preload] error {key}: {e}")
 
-# ================== Helpers de nombre ==================
+# ================== Helpers de nombre y paginación ==================
 def _clean_material_name(s: str) -> str:
     s = s.strip()
     s = re.sub(r"\s*\(\s*\d+\s+l[ií]neas\s*\)\s*$", "", s, flags=re.IGNORECASE)
@@ -158,6 +160,46 @@ def _resolve_key(name: str) -> Optional[str]:
         return candidates[-1]
     return None
 
+def parse_cmd_with_page(text: str) -> Tuple[str, int]:
+    """Devuelve (query, page). /list [page]  |  /search <query> [page]"""
+    parts = text.strip().split(maxsplit=2)
+    # parts[0] es el comando
+    if len(parts) == 1:
+        return "", 1
+    if len(parts) == 2:
+        # puede ser page o query
+        if parts[1].isdigit():
+            return "", int(parts[1])
+        return parts[1], 1
+    # len == 3
+    q, maybe_page = parts[1], parts[2]
+    if maybe_page.isdigit():
+        return q, int(maybe_page)
+    # query con espacios → viene todo en parts[1] y parts[2]; preferimos no complicar
+    return f"{parts[1]} {parts[2]}", 1
+
+def build_page(keys: List[str], page: int, title: str) -> str:
+    """Construye el texto de una página sin superar el límite de Telegram."""
+    total = len(keys)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * PAGE_SIZE
+    end = min(start + PAGE_SIZE, total)
+
+    header = f"{title} (pág. {page}/{total_pages}, total {total}):\n"
+    out = header
+    idx = start
+    while idx < end:
+        line = f"• {keys[idx]} ({len(MEDIA_DB[keys[idx]].get('cues') or [])} líneas)\n"
+        if len(out) + len(line) > MSG_BUDGET:
+            break
+        out += line
+        idx += 1
+
+    if idx < end:
+        out += f"\n…texto truncado por límite de Telegram. Usa /list {page+1} para seguir."
+    return out.strip()
+
 # ================== Aiogram ==================
 dp = Dispatcher()
 
@@ -165,9 +207,10 @@ dp = Dispatcher()
 async def start_cmd(msg: Message):
     await msg.answer(
         "Hola 👋\n"
-        "• /list → ver TODO lo que hay bajo data/\n"
+        "• /list [página] → ver materiales (paginado)\n"
+        "• /search <texto> [página] → filtrar por nombre\n"
         "• /rescan → reindexar data/\n"
-        "• /play <clave|nombre> → manda audio y texto con traducción debajo"
+        "• /play <clave|nombre> → audio + texto con traducción debajo"
     )
 
 @dp.message(Command("list"))
@@ -176,17 +219,25 @@ async def list_cmd(msg: Message):
     if not MEDIA_DB:
         await msg.answer("No he encontrado materiales en data/.")
         return
-    header = "Materiales encontrados:\n"
-    chunk = header
-    for key in sorted(MEDIA_DB.keys()):
-        cues = MEDIA_DB[key].get("cues") or []
-        line = f"• {key} ({len(cues)} líneas)\n"
-        if len(chunk) + len(line) > 4000:
-            await msg.answer(chunk.rstrip())
-            chunk = ""
-        chunk += line
-    if chunk:
-        await msg.answer(chunk.rstrip())
+    _, page = parse_cmd_with_page(msg.text or "/list")
+    keys = sorted(MEDIA_DB.keys())
+    text = build_page(keys, page, "Materiales encontrados")
+    await msg.answer(text)
+
+@dp.message(Command("search"))
+async def search_cmd(msg: Message):
+    preload_local_media()
+    query, page = parse_cmd_with_page(msg.text or "/search")
+    q = query.strip().lower()
+    if not q:
+        await msg.answer("Uso: /search <texto> [página]")
+        return
+    keys = [k for k in sorted(MEDIA_DB.keys()) if q in k.lower()]
+    if not keys:
+        await msg.answer("Sin resultados.")
+        return
+    text = build_page(keys, page, f"Resultados para “{query}”")
+    await msg.answer(text)
 
 @dp.message(Command("rescan"))
 async def rescan_cmd(msg: Message):
@@ -202,7 +253,7 @@ async def play_cmd(msg: Message):
     raw = parts[1]
     key = _resolve_key(raw)
     if not key or key not in MEDIA_DB:
-        await msg.answer("No encuentro ese material. Prueba /list.")
+        await msg.answer("No encuentro ese material. Prueba /list o /search.")
         return
 
     item = MEDIA_DB[key]
