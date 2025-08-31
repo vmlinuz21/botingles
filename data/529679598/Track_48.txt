@@ -1,0 +1,5 @@
+Doctor:  Good morning. How are you?
+Patient: I'm not feeling very well, Doctor.
+Doctor:  I see. What's the matter?
+Patient: I've got a headache and I think I've got flu.
+Doctor:  You should stay in bed for two days and take some painkillers.
