@@ -1,0 +1,12 @@
+﻿Actor: To be, or not to be, is that the question?
+Director: Can I stop you there, Ray? Now, can I ask you a question? Have you learned your lines carefully?
+Actor: Well, I think I said that line correctly!
+Director: You said 'To be or not to be, is that the question'?
+Actor: I'm so sorry. Did I really say that? I hate saying lines wrongly.
+Director: It is a very famous line. Also, could you speak a little more naturally?
+Actor: I'm terribly sorry. 'To be or not to be ...'Director: You're doing it again. You're speaking slowly and loudly and ... too carefully.
+Actor: This is a famous speech. I don't want to do it quickly!
+Director: No, I'm sorry. I don't mean 'say it fast or quietly'. I mean just 'speak truthfully', like a real person.
+Actor: OK, I'll try and speak more naturally.
+Director: That's right. Talk honestly and openly to the audience. Imagine that you know them well. They're friends.
+Actor: To be or not to be, that is the question. Whether 'tis nobler in the mind to suffer the slings and arrows of outrageous fortune ...
