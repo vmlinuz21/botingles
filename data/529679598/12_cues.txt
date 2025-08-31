@@ -1,0 +1,14 @@
+0.900	2.970	Naomi: Hello, Naomi Clough.
+4.050	6.180	Edwin: Hello, it's me!
+7.440	10.269	Naomi: Hello, Ed. How are you?
+10.269	17.340	Edwin: I'm OK. I'm sitting in front of my computer. Where are you?
+18.030	18.720	Naomi: I'm sitting on the train. Are you at home?
+19.080	20.820	Edwin: Yes. Are you coming home?
+21.540	23.370	Naomi: No, sorry, it's Thursday night. I always go to my book club on Thursdays.
+24.030	26.760	Edwin: Oh, your book club! But I'm cooking dinner at the moment. It's chicken and I know you love chicken.
+27.120	28.740	Naomi: I'm sorry, but Saba's usually at book club and I want to talk to her. She's having a difficult time at work.
+29.130	31.980	Edwin: I see. OK, no problem. Saba's a good friend. See you later. What time?
+32.490	33.150	Naomi: Book club never finishes late.
+33.690	34.500	Edwin: You usually talk until midnight! OK, remember tomorrow's Friday and you usually go to work early on Fridays.
+35.040	36.810	Naomi: I know! Oh, I can't talk any more, the train's stopping. See you later. What's that noise?
+37.350	38.340	Edwin: I'm opening a bottle of wine! See you later.
