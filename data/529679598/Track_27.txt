@@ -1,0 +1,14 @@
+1 
+How old were you when you left school?
+
+2 
+Did you pass all your exams?
+
+3 
+How did you feel?
+
+4 
+Did you go to university or start work?
+
+5 
+Did you take a holiday the summer after you left school? (If 'Yes' Where did you go? Who did you go with? How long were you on holiday?)
