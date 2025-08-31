@@ -1,0 +1,6 @@
+1 Is your name Smith?
+2 Are you married?
+3 Do you live in London?
+4 Have you got a dishwasher?
+5 Does your kettle work?
+6 Can you help me?
