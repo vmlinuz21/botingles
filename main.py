@@ -89,4 +89,323 @@ def parse_srt_vtt(content: str) -> List[Cue]:
             if en > st and text:
                 cues.append(Cue(st, en, text))
         i += 1
-    return sorted
+    return sorted(cues, key=lambda c: c.start)
+
+def parse_txt(content: str) -> List[Cue]:
+    rows = [r for r in content.replace("\r\n", "\n").replace("\r", "\n").splitlines() if r.strip()]
+    cues: List[Cue] = []
+    t0 = 0.0
+    for r in rows:
+        txt = normalize_text(r)
+        dur = max(MIN_LAST_DUR, len(re.findall(r"\w+", txt)) / DEFAULT_WPS)
+        cues.append(Cue(t0, t0 + dur, txt))
+        t0 += dur
+    return cues
+
+# ================== Indexación local ==================
+def preload_local_media() -> None:
+    """Escanea TODAS las carpetas dentro de data/ y construye MEDIA_DB."""
+    MEDIA_DB.clear()
+    if not os.path.isdir(DATA_DIR):
+        return
+    roots = [d for d in os.listdir(DATA_DIR) if os.path.isdir(os.path.join(DATA_DIR, d))]
+    for root in roots:
+        root_path = os.path.join(DATA_DIR, root)
+        candidates: Dict[str, Dict[str, str]] = {}
+        for dirpath, _, files in os.walk(root_path):
+            rel_dir = os.path.relpath(dirpath, root_path)
+            if rel_dir == ".":
+                rel_dir = ""
+            for f in files:
+                ext = os.path.splitext(f)[1].lower()
+                base = os.path.splitext(f)[0]
+                if ext not in AUDIO_EXTS + TEXT_EXTS:
+                    continue
+                rel_base = base if not rel_dir else f"{rel_dir.replace(os.sep, '/')}/{base}"
+                key = f"{root}/{rel_base}"
+                entry = candidates.setdefault(key, {})
+                full = os.path.join(dirpath, f)
+                if ext in AUDIO_EXTS:
+                    entry["audio"] = full
+                else:
+                    entry["subs"] = full
+        for key, parts in candidates.items():
+            if "audio" not in parts or "subs" not in parts:
+                continue
+            try:
+                with open(parts["subs"], encoding="utf-8", errors="ignore") as f:
+                    raw = f.read()
+                cues = parse_srt_vtt(raw) if parts["subs"].lower().endswith((".srt", ".vtt")) else parse_txt(raw)
+                MEDIA_DB[key] = {"audio": parts["audio"], "cues": cues}
+            except Exception as e:
+                print(f"[preload] error {key}: {e}")
+
+# ================== Helpers de nombre y paginación ==================
+def _clean_material_name(s: str) -> str:
+    s = s.strip()
+    s = re.sub(r"\s*\(\s*\d+\s+l[ií]neas\s*\)\s*$", "", s, flags=re.IGNORECASE)
+    return s.strip(" '\"“”‘’")
+
+def _resolve_key(name: str) -> Optional[str]:
+    name = _clean_material_name(name)
+    if name in MEDIA_DB:
+        return name
+    lname = name.lower()
+    for k in MEDIA_DB.keys():
+        if k.lower() == lname:
+            return k
+    candidates = [k for k in MEDIA_DB.keys() if k.lower().endswith("/" + lname) or os.path.basename(k).lower() == lname]
+    if len(candidates) == 1:
+        return candidates[0]
+    if candidates:
+        candidates.sort(key=len)
+        return candidates[-1]
+    return None
+
+def parse_cmd_with_page(text: str) -> Tuple[str, int]:
+    """Devuelve (query, page). /list [page]  |  /search <query> [page]"""
+    parts = text.strip().split(maxsplit=2)
+    if len(parts) == 1:
+        return "", 1
+    if len(parts) == 2:
+        return ("", int(parts[1])) if parts[1].isdigit() else (parts[1], 1)
+    q, maybe_page = parts[1], parts[2]
+    if maybe_page.isdigit():
+        return q, int(maybe_page)
+    return f"{parts[1]} {parts[2]}", 1
+
+# ---- Ordenación natural y bloques 1–10, 11–20, … ----
+def natsort_key(path: str):
+    """Clave de ordenación natural para evitar que '10' vaya antes que '110'."""
+    tokens: List[object] = []
+    for seg in path.split('/'):
+        for part in re.split(r'(\d+)', seg.lower()):
+            tokens.append(int(part) if part.isdigit() else part)
+    return tokens
+
+def extract_last_number(key: str) -> Optional[int]:
+    """Último número del basename (Track_110 -> 110)."""
+    nums = re.findall(r'\d+', os.path.basename(key))
+    return int(nums[-1]) if nums else None
+
+def range_label_from_n(n: int) -> str:
+    """Bloque 1–10, 11–20, etc., para n."""
+    start = ((n - 1) // 10) * 10 + 1
+    end = start + 9
+    return f"{start}–{end}"
+
+def build_page(keys: List[str], page: int, title: str) -> str:
+    """
+    Página con:
+    - orden natural
+    - cabeceras 1–10, 11–20, …
+    - límite de mensaje (MSG_BUDGET)
+    """
+    if not keys:
+        return f"{title} (vacío)"
+
+    keys_sorted = sorted(keys, key=natsort_key)
+
+    total = len(keys_sorted)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * PAGE_SIZE
+    end = min(start + PAGE_SIZE, total)
+    slice_keys = keys_sorted[start:end]
+
+    header = f"{title} (pág. {page}/{total_pages}, total {total}):\n"
+    out = header
+    used = len(out)
+
+    last_bucket: Optional[object] = None
+    for k in slice_keys:
+        n = extract_last_number(k)
+        if n is not None:
+            bucket = (n - 1) // 10
+            if bucket != last_bucket:
+                block_label = range_label_from_n(n)
+                block_header = f"\n[{block_label}]\n"
+                if used + len(block_header) > MSG_BUDGET:
+                    break
+                out += block_header
+                used += len(block_header)
+                last_bucket = bucket
+        else:
+            if last_bucket != "otros":
+                block_header = "\n[Otros]\n"
+                if used + len(block_header) > MSG_BUDGET:
+                    break
+                out += block_header
+                used += len(block_header)
+                last_bucket = "otros"
+
+        line = f"• {k} ({len(MEDIA_DB[k].get('cues') or [])} líneas)\n"
+        if used + len(line) > MSG_BUDGET:
+            break
+        out += line
+        used += len(line)
+
+    if used == len(header):
+        out += "(sin elementos en esta página)"
+
+    return out.rstrip()
+
+# ================== Auditoría de pares ==================
+def audit_files() -> dict:
+    audio_exts = set(AUDIO_EXTS)
+    text_exts = set(TEXT_EXTS)
+
+    if not os.path.isdir(DATA_DIR):
+        return {
+            "audios": 0,
+            "texts": 0,
+            "pairs": 0,
+            "missing_text": set(),
+            "missing_audio": set(),
+        }
+
+    audios: set = set()
+    texts: set = set()
+
+    roots = [d for d in os.listdir(DATA_DIR) if os.path.isdir(os.path.join(DATA_DIR, d))]
+    for root in roots:
+        root_path = os.path.join(DATA_DIR, root)
+        for dirpath, _, files in os.walk(root_path):
+            rel_dir = os.path.relpath(dirpath, root_path)
+            if rel_dir == ".":
+                rel_dir = ""
+            for fname in files:
+                ext = os.path.splitext(fname)[1].lower()
+                if ext not in audio_exts and ext not in text_exts:
+                    continue
+                base = os.path.splitext(fname)[0]
+                rel_base = base if not rel_dir else f"{rel_dir.replace(os.sep, '/')}/{base}"
+                key = f"{root}/{rel_base}"
+                if ext in audio_exts:
+                    audios.add(key)
+                else:
+                    texts.add(key)
+
+    pairs = audios & texts
+    return {
+        "audios": len(audios),
+        "texts": len(texts),
+        "pairs": len(pairs),
+        "missing_text": audios - texts,   # hay audio pero falta texto
+        "missing_audio": texts - audios,  # hay texto pero falta audio
+    }
+
+# ================== Aiogram ==================
+dp = Dispatcher()
+
+@dp.message(Command("start"))
+async def start_cmd(msg: Message):
+    await msg.answer(
+        "Hola 👋\n"
+        "• /list [página] → ver materiales (paginado)\n"
+        "• /search <texto> [página] → filtrar por nombre\n"
+        "• /rescan → reindexar data/\n"
+        "• /missing → audita pares audio/texto\n"
+        "• /play <clave|nombre> → audio + texto con traducción debajo"
+    )
+
+@dp.message(Command("list"))
+async def list_cmd(msg: Message):
+    preload_local_media()
+    if not MEDIA_DB:
+        await msg.answer("No he encontrado materiales en data/.")
+        return
+    _, page = parse_cmd_with_page(msg.text or "/list")
+    keys = list(MEDIA_DB.keys())  # no ordenar aquí; lo hace build_page
+    text = build_page(keys, page, "Materiales encontrados")
+    await msg.answer(text)
+
+@dp.message(Command("search"))
+async def search_cmd(msg: Message):
+    preload_local_media()
+    query, page = parse_cmd_with_page(msg.text or "/search")
+    q = query.strip().lower()
+    if not q:
+        await msg.answer("Uso: /search <texto> [página]")
+        return
+    keys = [k for k in MEDIA_DB.keys() if q in k.lower()]  # sin ordenar aquí
+    if not keys:
+        await msg.answer("Sin resultados.")
+        return
+    text = build_page(keys, page, f"Resultados para “{query}”")
+    await msg.answer(text)
+
+@dp.message(Command("rescan"))
+async def rescan_cmd(msg: Message):
+    preload_local_media()
+    await msg.answer(f"Reindexado. Total materiales: {len(MEDIA_DB)}")
+
+@dp.message(Command("missing"))
+async def missing_cmd(msg: Message):
+    stats = audit_files()
+    mt = sorted(list(stats["missing_text"]))[:30]
+    ma = sorted(list(stats["missing_audio"]))[:30]
+    lines = [
+        f"Audit en {DATA_DIR}:",
+        f"• Audios: {stats['audios']}",
+        f"• Textos: {stats['texts']}",
+        f"• Pares válidos (indexados): {stats['pairs']}",
+        f"• Audios SIN texto: {len(stats['missing_text'])}",
+    ]
+    if mt:
+        lines += ["  ejemplos:"] + [f"  - {x}" for x in mt]
+    lines += [f"• Textos SIN audio: {len(stats['missing_audio'])}"]
+    if ma:
+        lines += ["  ejemplos:"] + [f"  - {x}" for x in ma]
+    await msg.answer("\n".join(lines))
+
+@dp.message(Command("play"))
+async def play_cmd(msg: Message):
+    parts = msg.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await msg.answer("Uso: /play <clave o nombre>")
+        return
+    raw = parts[1]
+    key = _resolve_key(raw)
+    if not key or key not in MEDIA_DB:
+        await msg.answer("No encuentro ese material. Prueba /list o /search.")
+        return
+
+    item = MEDIA_DB[key]
+    audio_path: Optional[str] = item.get("audio")  # type: ignore
+    cues: List[Cue] = item.get("cues")  # type: ignore
+    if not audio_path or not cues:
+        await msg.answer("Faltan archivos para ese material.")
+        return
+
+    # 1) Enviar audio
+    try:
+        await msg.answer_audio(audio=FSInputFile(audio_path), caption=f"▶ {key}")
+    except Exception as e:
+        await msg.answer(f"No pude enviar el audio: {e}")
+        return
+
+    # 2) Enviar texto original + traducción debajo (sin fonética)
+    out_lines: List[str] = []
+    for c in cues:
+        orig = c.text
+        trans = translate_line(orig)
+        out_lines.append(f"{orig}\n{trans}\n")
+
+    full_text = "\n".join(out_lines).strip()
+
+    # Fragmentar para no superar límites de Telegram
+    maxlen = 3500
+    for i in range(0, len(full_text), maxlen):
+        await msg.answer(full_text[i:i + maxlen])
+
+# ================== Main ==================
+async def main():
+    if not BOT_TOKEN:
+        raise RuntimeError("Falta TELEGRAM_TOKEN en el entorno.")
+    preload_local_media()
+    bot = Bot(BOT_TOKEN, parse_mode=None)
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
