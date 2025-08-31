@@ -1,0 +1,14 @@
+Sam: Hello, Nectar Design, Sam Wells speaking.
+Maisy: Hi, Sam, it's Maisy Walton.
+Sam: Hi, Maisy, how are you? What are you doing?
+Maisy: I'm on a train. I'm travelling to London for a meeting with Lewis.
+Sam: Oh, OK. Are you feeling OK today? You looked tired last week.
+Maisy: Yes. I'm fine thanks. I'm sitting in first class and I'm looking at some documents on my laptop.
+Sam: Great. Are you ready to meet Lewis?
+Maisy: Yes. I'm preparing my presentation now. Are you working?
+Sam: Yes, I'm reading my emails. There are about 300 in my inbox.
+Maisy: Can you email me a document? Have you got time?
+Sam: Of course. What do you want me to do?
+Maisy: I can't find the design file for Lewis's project. I'm searching for it at the moment.
+Sam: No problem. Yes, here it is. I'm sending it to you now.
+Maisy: Thanks, Sam, you're a star!
