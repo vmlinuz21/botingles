@@ -1,0 +1,11 @@
+﻿Reporter: Can you name a quality daily newspaper?
+A: Oh, yes. The Times in the UK or El País in Spain.
+
+Reporter: Have you ever read a tabloid newspaper?
+B: I sometimes read The Daily Mail or The Mirror.
+
+Reporter: Which TV news channel do you usually watch?
+C: I always watch The 6 O'clock News on the BBC.
+
+Reporter: Do you ever listen to the news on the radio?
+D: When I'm driving to work, I listen to Capitol Radio.
